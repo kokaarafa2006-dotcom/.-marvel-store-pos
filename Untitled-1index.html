@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marvel Store | النظام الاحترافي للإدارة</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Inter:wght@500;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Cairo', 'Inter', 'sans-serif'],
+                        mono: ['Inter', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #0b0f19;
+            color: #f8fafc;
+            font-family: 'Cairo', 'Inter', sans-serif;
+        }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #0b0f19; }
+        ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #334155; }
+        .glass {
+            background: rgba(17, 24, 39, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(51, 65, 85, 0.5);
+        }
+        .pulse-dot {
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.3; transform: scale(1.3); }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col select-none">
+
+    <!-- Toast Notifications Container -->
+    <div id="toast-container" class="fixed top-5 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 w-11/12 max-w-md pointer-events-none"></div>
+
+    <!-- Header -->
+    <header class="glass sticky top-0 z-40 px-4 py-3.5 shadow-xl border-b border-slate-800">
+        <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+                <div class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-amber-500 to-red-600 flex items-center justify-center shadow-lg shadow-amber-500/20 text-white text-xl">
+                    <i class="fa-solid fa-gamepad"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg font-black text-white flex items-center gap-2">
+                        <span>Marvel Store</span>
+                        <span class="text-[10px] bg-amber-500/20 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded-full">PRO</span>
+                    </h1>
+                    <p class="text-[11px] text-slate-400">نظام إدارة الأجهزة والمشروبات الاحترافي</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2.5 flex-wrap">
+                <div class="hidden sm:flex items-center gap-2 bg-slate-900 border border-slate-800 px-3 py-2 rounded-xl text-xs">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 pulse-dot"></span>
+                    <span class="text-slate-400">نشط الآن:</span>
+                    <strong id="active-count-badge" class="text-emerald-400 font-extrabold">0</strong>
+                </div>
+
+                <button onclick="openAdminModal()" class="bg-amber-500 hover:bg-amber-400 text-slate-950 px-4 py-2 rounded-xl text-xs sm:text-sm font-black flex items-center gap-2 shadow-lg shadow-amber-500/20 transition active:scale-95 cursor-pointer">
+                    <i class="fa-solid fa-user-shield"></i>
+                    <span>لوحة الأدمن</span>
+                </button>
+
+                <button onclick="openHistoryModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition active:scale-95 cursor-pointer">
+                    <i class="fa-solid fa-receipt text-indigo-400"></i>
+                    <span>السجل</span>
+                    <span id="history-badge" class="bg-indigo-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">0</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Devices & Menu (8 Cols) -->
+        <div class="lg:col-span-8 flex flex-col gap-6">
+            
+            <!-- Devices Section -->
+            <section class="glass rounded-2xl p-4 sm:p-5 shadow-xl">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-tv text-amber-400"></i>
+                        <h2 class="text-base font-extrabold text-white">الأجهزة (اختر جهازاً للتحكم)</h2>
+                    </div>
+                </div>
+                <div id="devices-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-3.5"></div>
+            </section>
+
+            <!-- Menu Section -->
+            <section class="glass rounded-2xl p-4 sm:p-5 shadow-xl">
+                <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-mug-hot text-amber-400"></i>
+                        <h2 class="text-base font-extrabold text-white">قائمة المشروبات والسناكس</h2>
+                    </div>
+                    <!-- Filter Buttons -->
+                    <div class="flex items-center gap-1 bg-slate-900 p-1 rounded-xl border border-slate-800 text-xs">
+                        <button onclick="setMenuFilter('all')" id="filter-all" class="px-2.5 py-1 rounded-lg font-bold bg-amber-500 text-slate-950 transition cursor-pointer">الكل</button>
+                        <button onclick="setMenuFilter('hot')" id="filter-hot" class="px-2.5 py-1 rounded-lg font-bold text-slate-400 hover:text-white transition cursor-pointer">ساخن</button>
+                        <button onclick="setMenuFilter('cold')" id="filter-cold" class="px-2.5 py-1 rounded-lg font-bold text-slate-400 hover:text-white transition cursor-pointer">بارد</button>
+                        <button onclick="setMenuFilter('snack')" id="filter-snack" class="px-2.5 py-1 rounded-lg font-bold text-slate-400 hover:text-white transition cursor-pointer">سناكس</button>
+                    </div>
+                </div>
+
+                <!-- Target Indicator -->
+                <div class="mb-4 p-3 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-between text-xs">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-hand-pointer text-amber-400"></i>
+                        <span class="text-slate-400">الإضافة موجهة إلى:</span>
+                        <strong id="target-device-name" class="text-amber-400 font-extrabold">لم يتم تحديد جهاز</strong>
+                    </div>
+                    <span id="target-device-rate" class="bg-slate-800 text-slate-300 px-2 py-0.5 rounded font-bold">-- ج/ساعة</span>
+                </div>
+
+                <div id="menu-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3"></div>
+            </section>
+        </div>
+
+        <!-- Bill & Checkout (4 Cols) -->
+        <aside class="lg:col-span-4">
+            <div class="glass rounded-2xl p-4 sm:p-5 shadow-2xl sticky top-24 flex flex-col justify-between min-h-[500px]">
+                
+                <div id="bill-empty" class="flex-1 flex flex-col items-center justify-center text-center py-12">
+                    <div class="w-14 h-14 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-600 text-xl mb-3">
+                        <i class="fa-solid fa-desktop"></i>
+                    </div>
+                    <h3 class="text-sm font-bold text-slate-300">اختر جهازاً لعرض التفاصيل</h3>
+                    <p class="text-xs text-slate-500 mt-1">اضغط على أي جهاز لبدء الوقت أو إضافة طلبات.</p>
+                </div>
+
+                <div id="bill-content" class="hidden flex-1 flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+                            <div class="flex items-center gap-2.5">
+                                <span id="bill-num" class="w-10 h-10 rounded-xl bg-amber-500 text-slate-950 font-black text-base flex items-center justify-center">1</span>
+                                <div>
+                                    <h3 id="bill-title" class="text-sm font-extrabold text-white">جهاز 1</h3>
+                                    <span id="bill-start" class="text-[10px] text-slate-400 font-mono">--:--</span>
+                                </div>
+                            </div>
+                            <span id="bill-status-pill" class="px-2.5 py-1 rounded-full text-xs font-bold bg-slate-800 text-slate-400">متاح</span>
+                        </div>
+
+                        <!-- Timer Box -->
+                        <div class="my-4 bg-slate-950 border border-slate-800 rounded-xl p-3.5">
+                            <div class="flex items-center justify-between mb-1">
+                                <span class="text-xs text-slate-400 flex items-center gap-1.5"><i class="fa-solid fa-stopwatch text-amber-400"></i> الوقت المنقضي</span>
+                                <span id="bill-timer" class="font-mono text-xl font-black text-white">00:00:00</span>
+                            </div>
+                            <div class="flex items-center justify-between pt-2 border-t border-slate-800/80 text-xs">
+                                <span class="text-slate-400">تكلفة الوقت (<span id="bill-rate-span">30</span> ج/س):</span>
+                                <strong id="bill-time-cost" class="text-amber-400 text-sm font-extrabold">0.00 ج.م</strong>
+                            </div>
+                        </div>
+
+                        <!-- Orders -->
+                        <div class="mb-3">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-xs font-bold text-slate-300">المشروبات المضافة:</span>
+                                <span id="bill-orders-count" class="text-[11px] text-slate-400">0 أصناف</span>
+                            </div>
+                            <div id="bill-orders-list" class="max-h-48 overflow-y-auto space-y-2 pr-1"></div>
+                        </div>
+                    </div>
+
+                    <div class="pt-3 border-t border-slate-800 space-y-3">
+                        <div class="space-y-1 text-xs">
+                            <div class="flex justify-between text-slate-400"><span>المشروبات:</span><span id="bill-drinks-cost" class="font-bold text-slate-200">0.00 ج.م</span></div>
+                            <div class="flex justify-between items-center pt-1.5 border-t border-slate-800 text-sm font-extrabold text-white">
+                                <span>الإجمالي الكلي:</span>
+                                <span id="bill-grand-total" class="text-xl font-black text-emerald-400">0.00 ج.م</span>
+                            </div>
+                        </div>
+
+                        <button id="btn-action-start" onclick="startSelectedDevice()" class="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs transition active:scale-95 cursor-pointer flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-play"></i> تشغيل الجهاز وبدء الوقت
+                        </button>
+
+                        <button id="btn-action-end" onclick="endSelectedDevice()" class="hidden w-full py-3 rounded-xl bg-red-600 hover:bg-red-500 text-white font-black text-xs transition active:scale-95 cursor-pointer flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-flag-checkered"></i> تقفيل الحساب وإصدار التقرير
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </aside>
+    </main>
+
+    <!-- MODAL 1: Admin Password Login -->
+    <div id="modal-admin-login" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-sm w-full p-5 shadow-2xl">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-800 mb-4">
+                <div class="flex items-center gap-2 text-amber-400 font-bold">
+                    <i class="fa-solid fa-lock"></i> تسجيل دخول الأدمن
+                </div>
+                <button onclick="closeModal('modal-admin-login')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <form onsubmit="verifyAdminPass(event)" class="space-y-3">
+                <div>
+                    <label class="block text-xs text-slate-300 mb-1">كلمة المرور:</label>
+                    <input type="password" id="admin-pass-input" required placeholder="••••" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-center text-lg font-bold text-white focus:outline-none focus:border-amber-500">
+                    <p class="text-[10px] text-slate-400 mt-1 text-center">الباسورد الافتراضي: <span class="text-amber-400 font-bold">1234</span></p>
+                </div>
+                <button type="submit" class="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs transition cursor-pointer">دخول لوحة التحكم</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 2: Admin Dashboard -->
+    <div id="modal-admin-panel" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-2xl w-full p-5 shadow-2xl flex flex-col max-h-[90vh]">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+                <div class="flex items-center gap-2.5 text-white font-extrabold">
+                    <i class="fa-solid fa-sliders text-amber-400"></i> لوحة تحكم الأدمن (تسعير مستقل وإدارة)
+                </div>
+                <button onclick="closeModal('modal-admin-panel')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+
+            <!-- Admin Tabs -->
+            <div class="grid grid-cols-3 gap-2 my-3 bg-slate-950 p-1.5 rounded-xl border border-slate-800 text-xs font-bold">
+                <button onclick="switchAdminTab('devices')" id="atab-btn-devices" class="py-2 rounded-lg bg-amber-500 text-slate-950 transition cursor-pointer">الأجهزة والأسعار</button>
+                <button onclick="switchAdminTab('menu')" id="atab-btn-menu" class="py-2 rounded-lg text-slate-400 hover:text-white transition cursor-pointer">المشروبات</button>
+                <button onclick="switchAdminTab('security')" id="atab-btn-security" class="py-2 rounded-lg text-slate-400 hover:text-white transition cursor-pointer">كلمة المرور</button>
+            </div>
+
+            <div class="flex-1 overflow-y-auto pr-1 space-y-4">
+                <!-- DEVICES TAB -->
+                <div id="atab-content-devices" class="space-y-3">
+                    <form onsubmit="adminAddDevice(event)" class="bg-slate-950 p-3.5 rounded-xl border border-slate-800 space-y-2.5">
+                        <div class="text-xs font-bold text-amber-400">إضافة جهاز جديد:</div>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                            <input type="number" id="adm-new-id" required placeholder="رقم الجهاز" class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white">
+                            <input type="text" id="adm-new-name" required placeholder="اسم الجهاز (VIP / عادي)" class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white">
+                            <input type="number" id="adm-new-rate" required min="1" step="0.5" value="30" placeholder="سعر الساعة" class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-emerald-400 font-bold">
+                        </div>
+                        <button type="submit" class="w-full py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs cursor-pointer">إضافة الجهاز</button>
+                    </form>
+                    <div id="adm-devices-list" class="space-y-2"></div>
+                </div>
+
+                <!-- MENU TAB -->
+                <div id="atab-content-menu" class="hidden space-y-3">
+                    <form onsubmit="adminAddMenu(event)" class="bg-slate-950 p-3.5 rounded-xl border border-slate-800 space-y-2.5">
+                        <div class="text-xs font-bold text-amber-400">إضافة مشروب جديد:</div>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                            <input type="text" id="adm-m-name" required placeholder="اسم الصنف (English)" class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white" dir="ltr">
+                            <input type="text" id="adm-m-ar" placeholder="الوصف (عربي)" class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white">
+                            <input type="number" id="adm-m-price" required min="1" step="0.5" placeholder="السعر" class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-emerald-400 font-bold">
+                        </div>
+                        <div class="flex items-center justify-between gap-2">
+                            <select id="adm-m-cat" class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white">
+                                <option value="hot">مشروبات ساخنة</option>
+                                <option value="cold">مشروبات باردة</option>
+                                <option value="snack">سناكس</option>
+                            </select>
+                            <button type="submit" class="py-2 px-5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs cursor-pointer">حفظ الصنف</button>
+                        </div>
+                    </form>
+                    <div id="adm-menu-list" class="space-y-2"></div>
+                </div>
+
+                <!-- SECURITY TAB -->
+                <div id="atab-content-security" class="hidden space-y-3">
+                    <form onsubmit="adminChangePass(event)" class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
+                        <div class="text-xs font-bold text-amber-400">تغيير كلمة مرور الأدمن:</div>
+                        <input type="password" id="adm-p1" required placeholder="الباسورد الجديد" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white">
+                        <input type="password" id="adm-p2" required placeholder="تأكيد الباسورد الجديد" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white">
+                        <button type="submit" class="py-2 px-4 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs cursor-pointer">تحديث كلمة المرور</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 3: Receipt Modal -->
+    <div id="modal-receipt" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-5 shadow-2xl">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+                <div class="flex items-center gap-2 text-emerald-400 font-bold"><i class="fa-solid fa-circle-check"></i> تقرير الجلسة</div>
+                <button onclick="closeModal('modal-receipt')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div id="receipt-body" class="my-4 bg-slate-950 border border-slate-800 rounded-xl p-4 text-xs space-y-2 max-h-[60vh] overflow-y-auto"></div>
+            <div class="grid grid-cols-2 gap-2 pt-2">
+                <button onclick="copyReceipt()" class="py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs cursor-pointer flex items-center justify-center gap-1"><i class="fa-solid fa-copy"></i> نسخ التقرير</button>
+                <button onclick="whatsappReceipt()" class="py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs cursor-pointer flex items-center justify-center gap-1"><i class="fa-brands fa-whatsapp"></i> إرسال واتساب</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 4: History Modal -->
+    <div id="modal-history" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-2xl w-full p-5 shadow-2xl flex flex-col max-h-[85vh]">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+                <div class="flex items-center gap-2 font-bold text-white"><i class="fa-solid fa-clock-rotate-left text-indigo-400"></i> سجل الجلسات السابقة</div>
+                <button onclick="closeModal('modal-history')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div id="history-list" class="my-3 overflow-y-auto space-y-2 flex-1 pr-1"></div>
+            <div class="pt-3 border-t border-slate-800 flex justify-between items-center text-xs">
+                <span id="history-total" class="font-extrabold text-emerald-400 text-sm">الإجمالي: 0.00 ج.م</span>
+                <button onclick="clearHistory()" class="text-red-400 underline cursor-pointer">مسح السجل</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SYSTEM JAVASCRIPT -->
+    <script>
+        // Storage helper
+        const Storage = {
+            get(k, def) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : def; } catch(e) { return def; } },
+            set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch(e) {} }
+        };
+
+        const DEF_DEVICES = [
+            { id: 1, name: 'جهاز 1', rate: 30, status: 'idle', startTime: null, orders: [] },
+            { id: 2, name: 'جهاز 2', rate: 30, status: 'idle', startTime: null, orders: [] },
+            { id: 3, name: 'جهاز 3', rate: 30, status: 'idle', startTime: null, orders: [] },
+            { id: 4, name: 'جهاز 4', rate: 40, status: 'idle', startTime: null, orders: [] },
+            { id: 5, name: 'جهاز 5 (VIP)', rate: 50, status: 'idle', startTime: null, orders: [] },
+            { id: 6, name: 'جهاز 6 (VIP)', rate: 50, status: 'idle', startTime: null, orders: [] }
+        ];
+
+        const DEF_MENU = [
+            { id: 'm1', name: 'Nescafé 3-in-1', ar: 'نسكافيه 3 في 1', price: 15, category: 'hot', icon: 'fa-mug-hot' },
+            { id: 'm2', name: 'Coffee Mix', ar: 'كوفي ميكس', price: 15, category: 'hot', icon: 'fa-mug-saucer' },
+            { id: 'm3', name: 'Tea / شاي', ar: 'شاي مظبوط', price: 10, category: 'hot', icon: 'fa-leaf' },
+            { id: 'm4', name: 'Pepsi', ar: 'بيبسي كانز', price: 20, category: 'cold', icon: 'fa-can-food' },
+            { id: 'm5', name: 'Twist', ar: 'تويست', price: 20, category: 'cold', icon: 'fa-bottle-water' },
+            { id: 'm6', name: 'Fury', ar: 'فيوري طاقة', price: 25, category: 'cold', icon: 'fa-bolt' },
+            { id: 'm7', name: 'Indomie', ar: 'إندومي', price: 20, category: 'snack', icon: 'fa-bowl-food' }
+        ];
+
+        let state = {
+            adminPass: Storage.get('ms_pass', '1234'),
+            devices: Storage.get('ms_devs', DEF_DEVICES),
+            menu: Storage.get('ms_menu', DEF_MENU),
+            history: Storage.get('ms_hist', []),
+            selectedId: 1,
+            filter: 'all',
+            lastText: ''
+        };
+
+        function persist() {
+            Storage.set('ms_pass', state.adminPass);
+            Storage.set('ms_devs', state.devices);
+            Storage.set('ms_menu', state.menu);
+            Storage.set('ms_hist', state.history);
+        }
+
+        function toast(msg, type='info') {
+            const box = document.getElementById('toast-container');
+            const d = document.createElement('div');
+            const colors = { success: 'bg-emerald-950 border-emerald-500 text-emerald-200', error: 'bg-red-950 border-red-500 text-red-200', info: 'bg-slate-900 border-indigo-500 text-slate-200' };
+            d.className = `p-3 rounded-xl border text-xs font-bold shadow-xl transition-all ${colors[type] || colors.info}`;
+            d.textContent = msg;
+            box.appendChild(d);
+            setTimeout(() => d.remove(), 2500);
+        }
+
+        function fmtTime(ms) {
+            if (!ms || ms < 0) return '00:00:00';
+            let sec = Math.floor(ms / 1000);
+            let h = String(Math.floor(sec / 3600)).padStart(2, '0');
+            let m = String(Math.floor((sec % 3600) / 60)).padStart(2, '0');
+            let s = String(sec % 60).padStart(2, '0');
+            return `${h}:${m}:${s}`;
+        }
+
+        function calcCosts(dev) {
+            let ms = (dev.status === 'running' && dev.startTime) ? (Date.now() - dev.startTime) : 0;
+            let timeCost = dev.status === 'running' ? Math.round(((ms / 3600000) * dev.rate) * 100) / 100 : 0;
+            let drinksCost = dev.orders.reduce((s, o) => s + (o.price * o.qty), 0);
+            return { ms, timeCost, drinksCost, total: timeCost + drinksCost };
+        }
+
+        // Render UI
+        function renderAll() {
+            renderDevices();
+            renderMenu();
+            renderBill();
+            document.getElementById('history-badge').textContent = state.history.length;
+        }
+
+        function renderDevices() {
+            let grid = document.getElementById('devices-grid');
+            let active = 0;
+            grid.innerHTML = state.devices.map(d => {
+                let run = d.status === 'running';
+                if (run) active++;
+                let sel = d.id === state.selectedId;
+                let c = calcCosts(d);
+                let items = d.orders.reduce((s, o) => s + o.qty, 0);
+
+                return `
+                    <div onclick="selectDev(${d.id})" class="cursor-pointer p-3.5 rounded-2xl border transition ${
+                        sel ? 'bg-slate-800 border-amber-500 ring-2 ring-amber-500/20' : run ? 'bg-slate-900 border-emerald-500/50' : 'bg-slate-950 border-slate-800'
+                    }">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="w-6 h-6 rounded bg-slate-800 text-amber-400 font-bold text-xs flex items-center justify-center">${d.id}</span>
+                            <span class="text-[10px] text-amber-400 font-bold">${d.rate} ج/س</span>
+                        </div>
+                        <div class="font-bold text-sm text-white truncate mb-1">${d.name}</div>
+                        <div class="font-mono text-base font-black ${run ? 'text-white' : 'text-slate-600'}">${fmtTime(c.ms)}</div>
+                        <div class="flex justify-between text-[11px] text-slate-400 mt-1 pt-1 border-t border-slate-800">
+                            <span>طلبات: ${items}</span>
+                            <strong class="${run ? 'text-emerald-400' : 'text-slate-500'}">${c.total.toFixed(2)} ج</strong>
+                        </div>
+                        <div class="mt-2 pt-2 border-t border-slate-800/60">
+                            ${!run 
+                                ? `<button onclick="event.stopPropagation(); startDev(${d.id})" class="w-full py-1 rounded bg-emerald-600/20 text-emerald-300 hover:bg-emerald-600 hover:text-white text-xs font-bold transition">تشغيل</button>`
+                                : `<button onclick="event.stopPropagation(); selectDev(${d.id}); endSelectedDevice();" class="w-full py-1 rounded bg-red-500/20 text-red-300 hover:bg-red-600 hover:text-white text-xs font-bold transition">تقفيل</button>`
+                            }
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            document.getElementById('active-count-badge').textContent = active;
+        }
+
+        function renderMenu() {
+            let grid = document.getElementById('menu-grid');
+            let list = state.filter === 'all' ? state.menu : state.menu.filter(m => m.category === state.filter);
+            
+            grid.innerHTML = list.map(m => `
+                <button onclick="addDrink('${m.id}')" class="text-right p-3 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 hover:border-amber-500/50 transition cursor-pointer flex flex-col justify-between">
+                    <div class="flex justify-between items-start w-full mb-2">
+                        <span class="w-7 h-7 rounded bg-slate-900 text-amber-400 flex items-center justify-center text-xs"><i class="fa-solid ${m.icon}"></i></span>
+                        <span class="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded">${m.price} ج</span>
+                    </div>
+                    <div>
+                        <div class="font-bold text-xs text-white truncate" dir="ltr">${m.name}</div>
+                        <div class="text-[10px] text-slate-400 truncate">${m.ar}</div>
+                    </div>
+                </button>
+            `).join('');
+        }
+
+        function renderBill() {
+            let empty = document.getElementById('bill-empty');
+            let content = document.getElementById('bill-content');
+            let d = state.devices.find(x => x.id === state.selectedId);
+
+            if (!d) {
+                empty.classList.remove('hidden');
+                content.classList.add('hidden');
+                document.getElementById('target-device-name').textContent = 'لا يوجد';
+                return;
+            }
+
+            empty.classList.add('hidden');
+            content.classList.remove('hidden');
+            document.getElementById('target-device-name').textContent = d.name;
+            document.getElementById('target-device-rate').textContent = `${d.rate} ج/ساعة`;
+
+            let run = d.status === 'running';
+            let c = calcCosts(d);
+
+            document.getElementById('bill-num').textContent = d.id;
+            document.getElementById('bill-title').textContent = d.name;
+            document.getElementById('bill-rate-span').textContent = d.rate;
+            document.getElementById('bill-start').textContent = run ? `بدأ: ${new Date(d.startTime).toLocaleTimeString('ar-EG', {hour:'2-digit', minute:'2-digit'})}` : 'متاح';
+            document.getElementById('bill-status-pill').textContent = run ? 'شغال' : 'متاح';
+            document.getElementById('bill-status-pill').className = run ? 'px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-400' : 'px-2.5 py-1 rounded-full text-xs font-bold bg-slate-800 text-slate-400';
+
+            document.getElementById('bill-timer').textContent = fmtTime(c.ms);
+            document.getElementById('bill-time-cost').textContent = `${c.timeCost.toFixed(2)} ج.م`;
+            document.getElementById('bill-drinks-cost').textContent = `${c.drinksCost.toFixed(2)} ج.م`;
+            document.getElementById('bill-grand-total').textContent = `${c.total.toFixed(2)} ج.م`;
+
+            document.getElementById('btn-action-start').classList.toggle('hidden', run);
+            document.getElementById('btn-action-end').classList.toggle('hidden', !run);
+
+            let ordList = document.getElementById('bill-orders-list');
+            document.getElementById('bill-orders-count').textContent = `${d.orders.reduce((s,o)=>s+o.qty,0)} أصناف`;
+            
+            if (d.orders.length === 0) {
+                ordList.innerHTML = `<div class="text-center py-4 text-xs text-slate-500">لا توجد مشروبات مضافة</div>`;
+            } else {
+                ordList.innerHTML = d.orders.map(o => `
+                    <div class="flex justify-between items-center bg-slate-950 p-2 rounded-lg border border-slate-800 text-xs">
+                        <div>
+                            <span class="font-bold text-white" dir="ltr">${o.name}</span>
+                            <span class="text-slate-400 text-[10px] block">${o.price} ج × ${o.qty} = <strong class="text-amber-400">${(o.price*o.qty).toFixed(2)} ج</strong></span>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <button onclick="changeQty(${d.id}, '${o.id}', -1)" class="w-5 h-5 bg-slate-800 text-white rounded font-bold">-</button>
+                            <span class="w-4 text-center font-bold">${o.qty}</span>
+                            <button onclick="changeQty(${d.id}, '${o.id}', 1)" class="w-5 h-5 bg-slate-800 text-white rounded font-bold">+</button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        // Actions
+        function selectDev(id) { state.selectedId = id; renderAll(); }
+        function startDev(id) {
+            let d = state.devices.find(x => x.id === id);
+            if (d) {
+                d.status = 'running';
+                d.startTime = Date.now();
+                state.selectedId = id;
+                persist();
+                renderAll();
+                toast(`تم تشغيل ${d.name}`, 'success');
+            }
+        }
+        function startSelectedDevice() { startDev(state.selectedId); }
+
+        function addDrink(mId) {
+            let d = state.devices.find(x => x.id === state.selectedId);
+            let m = state.menu.find(x => x.id === mId);
+            if (!d || !m) return;
+
+            if (d.status !== 'running') {
+                d.status = 'running';
+                d.startTime = Date.now();
+            }
+
+            let exist = d.orders.find(o => o.id === m.id);
+            if (exist) exist.qty++;
+            else d.orders.push({ id: m.id, name: m.name, price: m.price, qty: 1 });
+
+            persist();
+            renderAll();
+            toast(`تم إضافة ${m.name}`);
+        }
+
+        function changeQty(devId, ordId, delta) {
+            let d = state.devices.find(x => x.id === devId);
+            if (!d) return;
+            let idx = d.orders.findIndex(o => o.id === ordId);
+            if (idx !== -1) {
+                d.orders[idx].qty += delta;
+                if (d.orders[idx].qty <= 0) d.orders.splice(idx, 1);
+                persist();
+                renderAll();
+            }
+        }
+
+        function endSelectedDevice() {
+            let d = state.devices.find(x => x.id === state.selectedId);
+            if (!d || d.status !== 'running') return;
+
+            let end = Date.now();
+            let c = calcCosts(d);
+            let report = {
+                id: 'MS-' + Math.floor(1000 + Math.random() * 9000),
+                deviceName: d.name,
+                rate: d.rate,
+                startStr: new Date(d.startTime).toLocaleTimeString('ar-EG', {hour:'2-digit', minute:'2-digit'}),
+                endStr: new Date(end).toLocaleTimeString('ar-EG', {hour:'2-digit', minute:'2-digit'}),
+                duration: fmtTime(c.ms),
+                humanDuration: fmtTime(c.ms),
+                orders: JSON.parse(JSON.stringify(d.orders)),
+                timeCost: c.timeCost,
+                drinksCost: c.drinksCost,
+                grandTotal: c.total
+            };
+
+            state.history.unshift(report);
+            d.status = 'idle';
+            d.startTime = null;
+            d.orders = [];
+
+            persist();
+            renderAll();
+            showReceipt(report);
+        }
+
+        function showReceipt(r) {
+            let ords = r.orders.length ? r.orders.map(o => `• ${o.name} (×${o.qty}) = ${(o.price*o.qty).toFixed(2)} ج`).join('\n') : '• بدون مشروبات';
+            state.lastText = `👑 *Marvel Store - تقرير جلسة* 👑
+📌 *الجهاز:* ${r.deviceName} (سعر الساعة: ${r.rate} ج)
+⏰ *الوقت:* من ${r.startStr} إلى ${r.endStr}
+⏳ *المدة:* ${r.duration}
+💵 *حساب الوقت:* ${r.timeCost.toFixed(2)} ج.م
+-------------------------
+🥤 *المشروبات والطلبات:*
+${ords}
+💰 *إجمالي المشروبات:* ${r.drinksCost.toFixed(2)} ج.م
+-------------------------
+✅ *الإجمالي النهائي المطلوب:* ${r.grandTotal.toFixed(2)} ج.م`;
+
+            document.getElementById('receipt-body').innerHTML = `
+                <div class="flex justify-between font-bold text-amber-400 pb-2 border-b border-slate-800">
+                    <span>فاتورة: ${r.id}</span>
+                    <span>${r.deviceName}</span>
+                </div>
+                <div class="space-y-1 text-slate-300 py-2">
+                    <div class="flex justify-between"><span>حساب الوقت:</span><strong>${r.timeCost.toFixed(2)} ج</strong></div>
+                    <div class="flex justify-between"><span>حساب المشروبات:</span><strong>${r.drinksCost.toFixed(2)} ج</strong></div>
+                </div>
+                <div class="pt-2 border-t border-slate-800 flex justify-between text-sm font-black text-emerald-400">
+                    <span>الإجمالي النهائي:</span>
+                    <span>${r.grandTotal.toFixed(2)} ج.م</span>
+                </div>
+            `;
+            openModal('modal-receipt');
+        }
+
+        function copyReceipt() {
+            navigator.clipboard.writeText(state.lastText);
+            toast('تم نسخ التقرير بنجاح!', 'success');
+        }
+        function whatsappReceipt() {
+            window.open(`https://wa.me/?text=${encodeURIComponent(state.lastText)}`, '_blank');
+        }
+
+        // Modals & Admin
+        function openModal(id) { document.getElementById(id).classList.remove('hidden'); document.getElementById(id).classList.add('flex'); }
+        function closeModal(id) { document.getElementById(id).classList.add('hidden'); document.getElementById(id).classList.remove('flex'); }
+
+        function openAdminModal() { document.getElementById('admin-pass-input').value = ''; openModal('modal-admin-login'); }
+        function verifyAdminPass(e) {
+            e.preventDefault();
+            if (document.getElementById('admin-pass-input').value === state.adminPass) {
+                closeModal('modal-admin-login');
+                renderAdmin();
+                openModal('modal-admin-panel');
+                toast('مرحباً بك في لوحة الأدمن', 'success');
+            } else {
+                toast('كلمة المرور غير صحيحة!', 'error');
+            }
+        }
+
+        function switchAdminTab(t) {
+            ['devices', 'menu', 'security'].forEach(tab => {
+                document.getElementById(`atab-content-${tab}`).classList.toggle('hidden', tab !== t);
+                document.getElementById(`atab-btn-${tab}`).className = tab === t ? 'py-2 rounded-lg bg-amber-500 text-slate-950 transition cursor-pointer' : 'py-2 rounded-lg text-slate-400 hover:text-white transition cursor-pointer';
+            });
+        }
+
+        function renderAdmin() {
+            // Devices
+            document.getElementById('adm-devices-list').innerHTML = state.devices.map(d => `
+                <div class="bg-slate-950 p-2.5 rounded-lg border border-slate-800 flex justify-between items-center text-xs">
+                    <div><strong>${d.name}</strong></div>
+                    <div class="flex items-center gap-2">
+                        <input type="number" value="${d.rate}" onchange="updateRate(${d.id}, this.value)" class="w-16 bg-slate-900 text-amber-400 font-bold text-center rounded p-1 border border-slate-700">
+                        <span>ج/س</span>
+                        <button onclick="delDev(${d.id})" class="px-2 py-1 bg-red-500/20 text-red-400 rounded">حذف</button>
+                    </div>
+                </div>
+            `).join('');
+
+            // Menu
+            document.getElementById('adm-menu-list').innerHTML = state.menu.map(m => `
+                <div class="bg-slate-950 p-2.5 rounded-lg border border-slate-800 flex justify-between items-center text-xs">
+                    <span dir="ltr"><strong>${m.name}</strong> (${m.category})</span>
+                    <div class="flex items-center gap-2">
+                        <input type="number" value="${m.price}" onchange="updateMenuPrice('${m.id}', this.value)" class="w-16 bg-slate-900 text-emerald-400 font-bold text-center rounded p-1 border border-slate-700">
+                        <span>ج</span>
+                        <button onclick="delMenu('${m.id}')" class="px-2 py-1 bg-red-500/20 text-red-400 rounded">حذف</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function updateRate(id, val) {
+            let d = state.devices.find(x => x.id === id);
+            if (d && val > 0) { d.rate = parseFloat(val); persist(); renderAll(); toast('تم تحديث السعر', 'success'); }
+        }
+        function updateMenuPrice(id, val) {
+            let m = state.menu.find(x => x.id === id);
+            if (m && val > 0) { m.price = parseFloat(val); persist(); renderAll(); toast('تم تحديث السعر', 'success'); }
+        }
+        function delDev(id) {
+            state.devices = state.devices.filter(x => x.id !== id);
+            persist(); renderAll(); renderAdmin(); toast('تم حذف الجهاز');
+        }
+        function delMenu(id) {
+            state.menu = state.menu.filter(x => x.id !== id);
+            persist(); renderAll(); renderAdmin(); toast('تم حذف الصنف');
+        }
+
+        function adminAddDevice(e) {
+            e.preventDefault();
+            let id = parseInt(document.getElementById('adm-new-id').value);
+            let name = document.getElementById('adm-new-name').value;
+            let rate = parseFloat(document.getElementById('adm-new-rate').value);
+            state.devices.push({ id, name, rate, status: 'idle', startTime: null, orders: [] });
+            persist(); renderAll(); renderAdmin(); toast('تم إضافة الجهاز بنجاح', 'success');
+        }
+
+        function adminAddMenu(e) {
+            e.preventDefault();
+            let name = document.getElementById('adm-m-name').value;
+            let ar = document.getElementById('adm-m-ar').value;
+            let price = parseFloat(document.getElementById('adm-m-price').value);
+            let category = document.getElementById('adm-m-cat').value;
+            state.menu.push({ id: 'm'+Date.now(), name, ar, price, category, icon: 'fa-mug-hot' });
+            persist(); renderAll(); renderAdmin(); toast('تم إضافة الصنف بنجاح', 'success');
+        }
+
+        function adminChangePass(e) {
+            e.preventDefault();
+            let p1 = document.getElementById('adm-p1').value;
+            let p2 = document.getElementById('adm-p2').value;
+            if (p1 !== p2) { toast('كلمتا المرور غير متطابقتين!', 'error'); return; }
+            state.adminPass = p1;
+            persist();
+            toast('تم تغيير الباسورد بنجاح', 'success');
+        }
+
+        function setMenuFilter(f) {
+            state.filter = f;
+            ['all', 'hot', 'cold', 'snack'].forEach(k => {
+                let btn = document.getElementById(`filter-${k}`);
+                btn.className = k === f ? 'px-2.5 py-1 rounded-lg font-bold bg-amber-500 text-slate-950 transition cursor-pointer' : 'px-2.5 py-1 rounded-lg font-bold text-slate-400 hover:text-white transition cursor-pointer';
+            });
+            renderMenu();
+        }
+
+        function openHistoryModal() {
+            let list = document.getElementById('history-list');
+            let sum = 0;
+            list.innerHTML = state.history.length === 0 ? `<div class="text-center py-6 text-slate-500 text-xs">لا توجد جلسات مسجلة</div>` : state.history.map(h => {
+                sum += h.grandTotal;
+                return `
+                    <div class="bg-slate-950 p-2.5 rounded-lg border border-slate-800 flex justify-between items-center text-xs">
+                        <div><strong>${h.deviceName}</strong> (${h.startStr} - ${h.endStr})</div>
+                        <strong class="text-emerald-400">${h.grandTotal.toFixed(2)} ج.م</strong>
+                    </div>
+                `;
+            }).join('');
+            document.getElementById('history-total').textContent = `إجمالي الإيرادات: ${sum.toFixed(2)} ج.م`;
+            openModal('modal-history');
+        }
+
+        function clearHistory() {
+            state.history = [];
+            persist();
+            openHistoryModal();
+            renderAll();
+            toast('تم مسح السجل');
+        }
+
+        // Timer Loop
+        setInterval(() => {
+            if (state.devices.some(d => d.status === 'running')) {
+                renderDevices();
+                renderBill();
+            }
+        }, 1000);
+
+        // Boot
+        renderAll();
+    </script>
+</body>
+</html>
